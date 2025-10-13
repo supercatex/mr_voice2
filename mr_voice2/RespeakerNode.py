@@ -291,10 +291,10 @@ def on_audio(data, channel):
 class RespeakerNode(Node):
     def __init__(self, output_dir="/tmp/mr_voice2/speech/", max_buf=10):
         super().__init__("respeaker")
-        self.pub_audio_path = self.create_publisher(String, "/respeaker/audio_path", 1)
+        self.pub_audio_path = self.create_publisher(String, "/mr_voice2/audio_path", 1)
         self.output_dir = output_dir
         if not os.path.exists(output_dir):
-            os.mkdir(output_dir)
+            os.makedirs(output_dir, exist_ok=True)
         self.max_buf = max_buf
     
     
