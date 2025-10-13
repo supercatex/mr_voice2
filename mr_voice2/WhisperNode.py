@@ -3,6 +3,7 @@ import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
 import whisper
+from playsound3 import playsound
 
 
 class WhisperNode(Node):
@@ -15,6 +16,8 @@ class WhisperNode(Node):
         self.lang = lang
         self.model = whisper.load_model("base")
         self.queue = []
+        
+        self.get_logger().info("Ready!")
         
     def callback_path(self, msg):
         audio_path = msg.data
@@ -29,9 +32,14 @@ class WhisperNode(Node):
             data = String()
             data.data = res["text"]
             self.pub_text.publish(data)
+            # sound = playsound(audio_path, block=True)
 
 
-if __name__ == "__main__":
+def main():
     rclpy.init()
     rclpy.spin(WhisperNode())
+    
+    
+if __name__ == "__main__":
+    main()
     

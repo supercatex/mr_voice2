@@ -254,62 +254,62 @@ class RespeakerAudio(object):
             self.stream.stop_stream()
 
 
-def on_audio(data, channel):
-    global node, respeaker_audio, respeaker_interface, is_voice_buf, direction_buf, audio_buf
-    if channel == 0:
-        if len(is_voice_buf) >= node.max_buf:
-            is_voice_buf.pop(0)
-        is_voice_buf.append(respeaker_interface.is_voice())
-        if len(direction_buf) >= node.max_buf:
-            direction_buf.pop(0)
-        direction_buf.append(respeaker_interface.direction)
-
-        if sum(is_voice_buf) == 0:
-            if len(audio_buf) > 0:
-                direction = np.argmax(np.bincount(direction_buf))
-                filename = time.strftime("%H%M%S", time.gmtime())
-                filename = "%s-%d.wav" % (filename, direction)
-                path = os.path.join(node.output_dir, filename)
-
-                print("Save to %s direction: %s" % (path, direction))
-
-                wf = wave.open(path, "wb")
-                wf.setnchannels(1)
-                wf.setsampwidth(respeaker_audio.pyaudio.get_sample_size(pyaudio.paInt16))
-                wf.setframerate(respeaker_audio.rate)
-                wf.writeframes(b"".join(audio_buf))
-                wf.close()
-
-                audio_buf = []
-                msg = String()
-                msg.data = path
-                node.pub_audio_path.publish(msg)
-        else:
-            audio_buf.append(data)
-
-
 class RespeakerNode(Node):
-    def __init__(self, output_dir="/tmp/mr_voice2/speech/", max_buf=10):
+    def __init__(self, output_dir="/tmp/mr_voice2/speech/", max_buf=30):
         super().__init__("respeaker")
         self.pub_audio_path = self.create_publisher(String, "/mr_voice2/audio_path", 1)
         self.output_dir = output_dir
         if not os.path.exists(output_dir):
             os.makedirs(output_dir, exist_ok=True)
         self.max_buf = max_buf
+        
+        self.is_voice_buf = []
+        self.direction_buf = []
+        self.audio_buf = []
+        
+        self.respeaker_interface = RespeakerInterface()
+        self.respeaker_audio = RespeakerAudio(self.on_audio)
+        self.respeaker_audio.start()
     
-    
-if __name__ == "__main__":
-    rclpy.init()
-    
-    node = RespeakerNode()
-    
-    is_voice_buf = []
-    direction_buf = []
-    audio_buf = []
+    def on_audio(self, data, channel):
+        if channel == 0:
+            if len(self.is_voice_buf) >= self.max_buf:
+                self.is_voice_buf.pop(0)
+            self.is_voice_buf.append(self.respeaker_interface.is_voice())
+            if len(self.direction_buf) >= self.max_buf:
+                self.direction_buf.pop(0)
+            self.direction_buf.append(self.respeaker_interface.direction)
 
-    respeaker_interface = RespeakerInterface()
-    respeaker_audio = RespeakerAudio(on_audio)
-    respeaker_audio.start()
+            if sum(self.is_voice_buf) == 0:
+                if len(self.audio_buf) > 0:
+                    direction = np.argmax(np.bincount(self.direction_buf))
+                    filename = time.strftime("%H%M%S", time.gmtime())
+                    filename = "%s-%d.wav" % (filename, direction)
+                    path = os.path.join(self.output_dir, filename)
+
+                    print("Save to %s direction: %s" % (path, direction))
+
+                    wf = wave.open(path, "wb")
+                    wf.setnchannels(1)
+                    wf.setsampwidth(self.respeaker_audio.pyaudio.get_sample_size(pyaudio.paInt16))
+                    wf.setframerate(self.respeaker_audio.rate)
+                    wf.writeframes(b"".join(self.audio_buf))
+                    wf.close()
+
+                    self.audio_buf = []
+                    msg = String()
+                    msg.data = path
+                    self.pub_audio_path.publish(msg)
+            else:
+                self.audio_buf.append(data)
     
+    
+def main():
+    rclpy.init()
+    node = RespeakerNode()
     rclpy.spin(node)
+
+
+if __name__ == "__main__":
+    main()  
     

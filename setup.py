@@ -24,7 +24,9 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'speaker = mr_voice2.speaker:main',
+            'SpeakerNode = mr_voice2.SpeakerNode:main',
+            'RespeakerNode = mr_voice2.RespeakerNode:main',
+            'WhisperNode = mr_voice2.WhisperNode:main',
         ],
     },
 )
