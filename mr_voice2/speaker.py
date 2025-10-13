@@ -20,6 +20,7 @@ class SpeakerNode(Node):
         os.makedirs(output_dir, exist_ok=True)
         self.is_playing = False
         self.text = ""
+        self.get_logger().info("Ready!")
 
     def callback_say(self, data):
         self.text = data.data
