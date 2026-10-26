@@ -5,4 +5,4 @@ pip install pyusb
 pip install pixel-ring
 pip install playsound3
 pip install click
-pip install whisper
+pip install openai-whisper
